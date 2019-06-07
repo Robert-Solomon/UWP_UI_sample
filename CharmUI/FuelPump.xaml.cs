@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Devices.Display.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -36,34 +38,28 @@ namespace CharmUI
         string StrSelectFuel = "Select Fuel Type";
         string StrPauseStop = "Stop/Pause Pump";
         string StrResumeFueling = "Resume Pump";
+        string MediaPath = "\\\\robsol-iotfs\\scratch\\CharmUI\\Media\\";
         struct sUri {
-            private readonly string display;
-            private readonly string uri;
-            private readonly int width;
-            private readonly int height;
+            private string display;
+            private string file;
+            private int width;
+            private int height;
 
-            public sUri(string display, int width, int height, string uri)
+            public sUri(string display, int width, int height, string file)
             {
                 this.display = display;
                 this.width = width;
                 this.height = height;
-                this.uri = uri;
+                this.file = file;
             }
 
             public string Display { get { return display; } }
             public int Width { get { return width; } }
             public int Height { get { return height; } }
-            public string Uri { get { return uri; } }
+            public string File { get { return file; } }
         }
 
-        static readonly sUri[] MediaList =
-            new[] {
-             new sUri ("MCUs     1920x1080 @30FPS", 1920, 1080, "file:///c:/Src/Robert/CharmUI/Media/10_MCUs_Everywhere_Revised_End_Card_SUBS_032818_15000kbps.mp4"),
-             new sUri ("Baking   1920x1080 @30FPS", 1920, 1080, "ms-appx:///baking%20-%20video.mp4"),
-             new sUri ("Keynote  1920x1080 @24FPS", 1920, 1080, "ms-appx:///Keynote_WindowsIoTNoVO_0322B.mp4"),
-             new sUri ("Tractor  1280x720  @30FPS", 1280, 720, "ms-appx:///PexelsVideos1560989.mp4"),
-             new sUri ("Seal     1920x1080 @24FPS", 1920, 1080, "ms-appx:///seal - video.mp4")
-            };
+        List<sUri> MediaList = new List<sUri>();
 
         struct sVid {
             private readonly string display;
@@ -99,6 +95,18 @@ namespace CharmUI
             ResetPump();
             DisplayDriver_Timer1.Interval = new TimeSpan(0, 0, 0, 0, 100);
             DisplayDriver_Timer1.Tick += DisplayDriver_TimerTick;
+
+            // initialize the media list from file
+            string[] lines = System.IO.File.ReadAllLines(MediaPath + "Media.lst");
+            foreach (var line in lines)
+            {
+                string[] words = line.Split(',');
+                string display = words[0];
+                int width = Int32.Parse(words[1]);
+                int height = Int32.Parse(words[2]);
+                string file = words[3];
+                MediaList.Add( new sUri(display, width, height, file));
+            }
 
             foreach (var l in MediaList)
                 VidList.Items.Add(l.Display);
@@ -282,7 +290,8 @@ namespace CharmUI
                             VidFrame.Height = MediaList[VidList.SelectedIndex].Height;
                             VidFrame.Width = MediaList[VidList.SelectedIndex].Width;
                         }
-                        VidFrame.Source = new System.Uri(MediaList[ VidList.SelectedIndex ].Uri);
+                        string fp = MediaPath + MediaList[VidList.SelectedIndex].File;
+                        VidFrame.Source = new System.Uri(@fp);
                         //VidFrame.Play();
                     }
                 }
