@@ -6,6 +6,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Display.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Gaming.Input.ForceFeedback;
 using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -24,6 +25,7 @@ namespace CharmUI
     /// </summary>
     public sealed partial class FuelPump : Page
     {
+        bool MediaEnabled = false;
         double FuelFilled = 0;
         double FuelPrice = 0;
         DispatcherTimer DisplayDriver_Timer1 = new DispatcherTimer();
@@ -33,12 +35,15 @@ namespace CharmUI
         PumpStates PumpState = PumpStates.StateInitial;
         enum FuelTypes { FuelNotSelected = 0, FuelPremium, FuelRegular, FuelDiesel };
         FuelTypes FuelType = FuelTypes.FuelNotSelected;
-        string StrAdBanner = "While you are waiting for your car to fill, just ignore the sign instructing you to never leave the pump unattended, and head into the store to grab a cup of coffee...              ";
-        string StrStartFueling = "Start Fueling";
-        string StrSelectFuel = "Select Fuel Type";
-        string StrPauseStop = "Stop/Pause Pump";
-        string StrResumeFueling = "Resume Pump";
-        string MediaPath = "\\\\robsol-iotfs\\scratch\\CharmUI\\Media\\";
+        readonly string StrAdBanner = "While you are waiting for your car to fill, just ignore the sign instructing you to never leave the pump unattended, and head into the store to grab a cup of coffee...              ";
+        readonly string StrStartFueling = "Start Fueling";
+        readonly string StrSelectFuel = "Select Fuel Type";
+        readonly string StrPauseStop = "Stop/Pause Pump";
+        readonly string StrResumeFueling = "Resume Pump";
+        string MediaFolder;
+        readonly string MediaIndexFile = "Media.lst";
+        readonly string MediaFolderLocalSettingKey = "MediaFolder";
+
         struct sUri {
             private string display;
             private string file;
@@ -96,24 +101,110 @@ namespace CharmUI
             DisplayDriver_Timer1.Interval = new TimeSpan(0, 0, 0, 0, 100);
             DisplayDriver_Timer1.Tick += DisplayDriver_TimerTick;
 
-            // initialize the media list from file
-            string[] lines = System.IO.File.ReadAllLines(MediaPath + "Media.lst");
-            foreach (var line in lines)
+            InitPageFromMedia();
+        }
+
+        void InitPageFromMedia(string path = null)
+        {
+            string _mediaFolder;
+
+            if (path == null)
             {
-                string[] words = line.Split(',');
-                string display = words[0];
-                int width = Int32.Parse(words[1]);
-                int height = Int32.Parse(words[2]);
-                string file = words[3];
-                MediaList.Add( new sUri(display, width, height, file));
+                Windows.Storage.ApplicationDataContainer localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
+                _mediaFolder = (string)localSettings.Values[MediaFolderLocalSettingKey];
             }
+            else
+                _mediaFolder = path;
 
-            foreach (var l in MediaList)
-                VidList.Items.Add(l.Display);
+            if (_mediaFolder == null)
+            {
+                DisableMediaControls();
+                MediaErrorMessage("No Media Folder configured");
+            }
+            else if (!File.Exists(_mediaFolder + MediaIndexFile))
+            {
+                DisableMediaControls();
+                MediaErrorMessage("No " + MediaIndexFile + " found in media folder");
+            }
+            else
+            {
+                // NOTE - no validation on content of the media.lst file content!!!
 
-            foreach (var s in VidFrameSize)
-                VidSize.Items.Add(s.Display);
-            VidSize.SelectedIndex = 0;
+                // initialize the media list from file
+                string[] lines = System.IO.File.ReadAllLines(_mediaFolder + MediaIndexFile);
+                foreach (var line in lines)
+                {
+                    string[] words = line.Split(',');
+                    string display = words[0];
+                    int width = Int32.Parse(words[1]);
+                    int height = Int32.Parse(words[2]);
+                    string file = words[3];
+                    MediaList.Add(new sUri(display, width, height, file));
+                }
+
+                foreach (var l in MediaList)
+                    VidList.Items.Add(l.Display);
+
+                foreach (var s in VidFrameSize)
+                    VidSize.Items.Add(s.Display);
+                VidSize.SelectedIndex = 0;
+
+                MediaFolder = _mediaFolder;
+                EnableMediaControls();
+            }
+        }
+
+        async void NewMediaFolderAsync()
+        {
+            var folderPicker = new Windows.Storage.Pickers.FolderPicker();
+            folderPicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Desktop;
+            folderPicker.FileTypeFilter.Add(".lst");
+
+            Windows.Storage.StorageFolder folder = await folderPicker.PickSingleFolderAsync();
+            if (folder != null)
+            {
+                string path = folder.Path + "\\";
+                InitPageFromMedia(path);
+
+                if (MediaEnabled)
+                {
+                    Windows.Storage.ApplicationDataContainer localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
+                    localSettings.Values[MediaFolderLocalSettingKey] = path;
+                }
+            }
+            else
+            {
+                // folder selection canceled
+            }
+        }
+
+        void DisableMediaControls()
+        {
+            VidList.IsEnabled = false;
+            VidPlay.IsEnabled = false;
+            VidSize.IsEnabled = false;
+            MediaEnabled = false;
+        }
+
+        void EnableMediaControls()
+        {
+            VidList.IsEnabled = true;
+            VidPlay.IsEnabled = true;
+            VidSize.IsEnabled = true;
+            MediaEnabled = true;
+        }
+
+        void MediaErrorMessage(string msg)
+        {
+
+        }
+
+        void FuelPump_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (!MediaEnabled)
+            {
+                NewMediaFolderAsync();
+            }
         }
 
         void DisplayDriver_TimerTick(object sender, object /*EventArgs*/ e)
@@ -150,6 +241,10 @@ namespace CharmUI
         private void BtnMainMenu_Click(object sender, RoutedEventArgs e)
         {
             this.Frame.Navigate(typeof(MainPage));
+        }
+        private void BtnMediaSrc_Click(object sender, RoutedEventArgs e)
+        {
+            NewMediaFolderAsync();
         }
 
         private void BtnFuelPremium_Click(object sender, RoutedEventArgs e)
@@ -290,7 +385,7 @@ namespace CharmUI
                             VidFrame.Height = MediaList[VidList.SelectedIndex].Height;
                             VidFrame.Width = MediaList[VidList.SelectedIndex].Width;
                         }
-                        string fp = MediaPath + MediaList[VidList.SelectedIndex].File;
+                        string fp = MediaFolder + MediaList[VidList.SelectedIndex].File;
                         VidFrame.Source = new System.Uri(@fp);
                         //VidFrame.Play();
                     }

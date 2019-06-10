@@ -6,12 +6,14 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Loaded="FuelPump_Loaded">
 
     <Grid Background="#FF1F1F1F">
         <Button Content="Main Menu" Height="40" Margin="54,42,0,0" VerticalAlignment="Top" Width="130" Click="BtnMainMenu_Click" Background="#55D1BDBD"/>
+        <Button Content="MediaSrc" Height="40" Margin="265,42,0,0" VerticalAlignment="Top" Width="70" Click="BtnMediaSrc_Click" Background="#55D1BDBD"/>
         <ComboBox x:Name="VidList" PlaceholderText="Select a Video" Margin="340,40,0,0" Height="45" Width="300" Background="#55D1BDBD"/>
-        <ToggleSwitch Header="Play Video" OnContent="Playing" OffContent="Not Playing" IsOn="False" VerticalAlignment="Top" Margin="645,23,0,0" Height="60" Width="130" Background="#55D1BDBD" Toggled="ToggleSwitch_Toggled"/>
+        <ToggleSwitch x:Name="VidPlay" Header="Play Video" OnContent="Playing" OffContent="Not Playing" IsOn="False" VerticalAlignment="Top" Margin="645,23,0,0" Height="60" Width="130" Background="#55D1BDBD" Toggled="ToggleSwitch_Toggled"/>
         <ComboBox x:Name="VidSize" PlaceholderText="Video FrameSize" Margin="820,40,0,0" Height="45" Width="150" Background="#55D1BDBD"/>
         <StackPanel Margin="30,100,0,0">
             <StackPanel Orientation="Horizontal">
