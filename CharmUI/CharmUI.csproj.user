@@ -15,4 +15,14 @@
     <RemoteDebugEnabled>true</RemoteDebugEnabled>
     <AuthenticationMode>Universal</AuthenticationMode>
   </PropertyGroup>
+  <PropertyGroup>
+    <Source>C:\Users\robsol.REDMOND\Pictures\CharmIcon.png</Source>
+    <SmallTileSource>C:\Users\robsol.REDMOND\Pictures\CharmIcon.png</SmallTileSource>
+    <MediumTileSource>C:\Users\robsol.REDMOND\Pictures\CharmIcon.png</MediumTileSource>
+    <WideTileSource>C:\Users\robsol.REDMOND\Pictures\CharmIcon.png</WideTileSource>
+    <LargeTileSource>C:\Users\robsol.REDMOND\Pictures\CharmIcon.png</LargeTileSource>
+    <AppIconSource>C:\Users\robsol.REDMOND\Pictures\CharmIcon.png</AppIconSource>
+    <SplashScreenSource>C:\Users\robsol.REDMOND\Pictures\CharmIcon.png</SplashScreenSource>
+    <PackageLogoSource>C:\Users\robsol.REDMOND\Pictures\CharmIcon.png</PackageLogoSource>
+  </PropertyGroup>
 </Project>
