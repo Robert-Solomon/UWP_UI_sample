@@ -118,7 +118,18 @@ namespace CharmUI
             {
                 string faToken = ApplicationData.Current.LocalSettings.Values[MediaFolderToken] as string;
                 if (faToken != null)
-                    _mediaFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(faToken);
+                {
+                    try
+                    {
+                        _mediaFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(faToken);
+                    }
+                    catch (Exception e)
+                    {
+                        // the folder previously stored must have been deleted, let's clean up
+                        StorageApplicationPermissions.FutureAccessList.Clear();
+                        ApplicationData.Current.LocalSettings.Values[MediaFolderToken] = null;
+                    }
+                }
             }
 
             if (_mediaFolder == null)
