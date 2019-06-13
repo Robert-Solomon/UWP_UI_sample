@@ -1,12 +1,17 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Devices.Display.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Gaming.Input.ForceFeedback;
+using Windows.Storage;
+using Windows.Storage.AccessCache;
+using Windows.Storage.Pickers;
 using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -40,9 +45,10 @@ namespace CharmUI
         readonly string StrSelectFuel = "Select Fuel Type";
         readonly string StrPauseStop = "Stop/Pause Pump";
         readonly string StrResumeFueling = "Resume Pump";
-        string MediaFolder;
+
+        StorageFolder MediaFolder;
         readonly string MediaIndexFile = "Media.lst";
-        readonly string MediaFolderLocalSettingKey = "MediaFolder";
+        readonly string MediaFolderToken = "PickedMediaFolder";
 
         struct sUri {
             private string display;
@@ -101,75 +107,90 @@ namespace CharmUI
             DisplayDriver_Timer1.Interval = new TimeSpan(0, 0, 0, 0, 100);
             DisplayDriver_Timer1.Tick += DisplayDriver_TimerTick;
 
-            InitPageFromMedia();
+            DisableMediaControls();
         }
 
-        void InitPageFromMedia(string path = null)
+        async Task InitPageMediaAsync(StorageFolder vidIxFolder = null)
         {
-            string _mediaFolder;
-
-            if (path == null)
-            {
-                Windows.Storage.ApplicationDataContainer localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
-                _mediaFolder = (string)localSettings.Values[MediaFolderLocalSettingKey];
-            }
-            else
-                _mediaFolder = path;
+            StorageFolder _mediaFolder = vidIxFolder;
 
             if (_mediaFolder == null)
             {
-                DisableMediaControls();
-                MediaErrorMessage("No Media Folder configured");
+                string faToken = ApplicationData.Current.LocalSettings.Values[MediaFolderToken] as string;
+                if (faToken != null)
+                    _mediaFolder = await StorageApplicationPermissions.FutureAccessList.GetFolderAsync(faToken);
             }
-            else if (!File.Exists(_mediaFolder + MediaIndexFile))
+
+            if (_mediaFolder == null)
+                _mediaFolder = KnownFolders.VideosLibrary;
+
+            StorageFile vidIxFile;
+            try
+            {
+                vidIxFile = await _mediaFolder.GetFileAsync(MediaIndexFile);
+            }
+            catch (Exception ex)
             {
                 DisableMediaControls();
-                MediaErrorMessage("No " + MediaIndexFile + " found in media folder");
+                MediaErrorMessage("Error opening " + MediaIndexFile + ex.ToString());
+                return;
             }
-            else
+
+            // NOTE - no validation on content of the media.lst file content!!!
+
+            // initialize the media list from file
+            MediaList.Clear();
+            var lines = await FileIO.ReadLinesAsync(vidIxFile);
+            foreach (var line in lines)
             {
-                // NOTE - no validation on content of the media.lst file content!!!
-
-                // initialize the media list from file
-                string[] lines = System.IO.File.ReadAllLines(_mediaFolder + MediaIndexFile);
-                foreach (var line in lines)
-                {
-                    string[] words = line.Split(',');
-                    string display = words[0];
-                    int width = Int32.Parse(words[1]);
-                    int height = Int32.Parse(words[2]);
-                    string file = words[3];
-                    MediaList.Add(new sUri(display, width, height, file));
-                }
-
-                foreach (var l in MediaList)
-                    VidList.Items.Add(l.Display);
-
-                foreach (var s in VidFrameSize)
-                    VidSize.Items.Add(s.Display);
-                VidSize.SelectedIndex = 0;
-
-                MediaFolder = _mediaFolder;
-                EnableMediaControls();
+                string[] words = line.Split(',');
+                string display = words[0];
+                int width = Int32.Parse(words[1]);
+                int height = Int32.Parse(words[2]);
+                string file = words[3];
+                MediaList.Add(new sUri(display, width, height, file));
             }
+
+            VidList.Items.Clear();
+            foreach (var l in MediaList)
+                VidList.Items.Add(l.Display);
+
+            VidSize.Items.Clear();
+            foreach (var s in VidFrameSize)
+                VidSize.Items.Add(s.Display);
+            VidSize.SelectedIndex = 0;
+
+            MediaFolder = _mediaFolder;
+            EnableMediaControls();
+
+            return;
         }
 
-        async void NewMediaFolderAsync()
+        async Task NewMediaFolderAsync()
         {
             var folderPicker = new Windows.Storage.Pickers.FolderPicker();
-            folderPicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Desktop;
-            folderPicker.FileTypeFilter.Add(".lst");
+            folderPicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.VideosLibrary;
+            folderPicker.FileTypeFilter.Add("*");
 
-            Windows.Storage.StorageFolder folder = await folderPicker.PickSingleFolderAsync();
+            StorageFolder folder = await folderPicker.PickSingleFolderAsync();
             if (folder != null)
             {
-                string path = folder.Path + "\\";
-                InitPageFromMedia(path);
-
+                await InitPageMediaAsync(folder);
                 if (MediaEnabled)
                 {
-                    Windows.Storage.ApplicationDataContainer localSettings = Windows.Storage.ApplicationData.Current.LocalSettings;
-                    localSettings.Values[MediaFolderLocalSettingKey] = path;
+                    string faToken = ApplicationData.Current.LocalSettings.Values[MediaFolderToken] as string;
+
+                    // get fatoken from params
+
+                    if (faToken == null)
+                    {
+                        faToken = StorageApplicationPermissions.FutureAccessList.Add(folder);
+                        ApplicationData.Current.LocalSettings.Values[MediaFolderToken] = faToken;
+                    }
+                    else
+                    {
+                        StorageApplicationPermissions.FutureAccessList.AddOrReplace(faToken, folder);
+                    }
                 }
             }
             else
@@ -199,12 +220,9 @@ namespace CharmUI
 
         }
 
-        void FuelPump_Loaded(object sender, RoutedEventArgs e)
+        async void FuelPump_Loaded(object sender, RoutedEventArgs e)
         {
-            if (!MediaEnabled)
-            {
-                NewMediaFolderAsync();
-            }
+            await InitPageMediaAsync();
         }
 
         void DisplayDriver_TimerTick(object sender, object /*EventArgs*/ e)
@@ -242,9 +260,9 @@ namespace CharmUI
         {
             this.Frame.Navigate(typeof(MainPage));
         }
-        private void BtnMediaSrc_Click(object sender, RoutedEventArgs e)
+        private async void BtnMediaSrc_Click(object sender, RoutedEventArgs e)
         {
-            NewMediaFolderAsync();
+            await NewMediaFolderAsync();
         }
 
         private void BtnFuelPremium_Click(object sender, RoutedEventArgs e)
@@ -362,7 +380,7 @@ namespace CharmUI
             PumpState = PumpStates.StateInitial;
         }
 
-        private void ToggleSwitch_Toggled(object sender, RoutedEventArgs e)
+        private async void ToggleSwitch_Toggled(object sender, RoutedEventArgs e)
         {
             ToggleSwitch toggleSwitch = sender as ToggleSwitch;
             if (toggleSwitch != null)
@@ -385,9 +403,19 @@ namespace CharmUI
                             VidFrame.Height = MediaList[VidList.SelectedIndex].Height;
                             VidFrame.Width = MediaList[VidList.SelectedIndex].Width;
                         }
-                        string fp = MediaFolder + MediaList[VidList.SelectedIndex].File;
-                        VidFrame.Source = new System.Uri(@fp);
-                        //VidFrame.Play();
+
+                        var openPicker = new FileOpenPicker();
+                        openPicker.ViewMode = PickerViewMode.Thumbnail;
+                        openPicker.SuggestedStartLocation = PickerLocationId.VideosLibrary;
+                        openPicker.FileTypeFilter.Add("*");
+                        StorageFile mediaFile = await openPicker.PickSingleFileAsync();
+
+
+                        //string fileName = MediaList[VidList.SelectedIndex].File;
+                        //StorageFile mediaFile = await MediaFolder.GetFileAsync(fileName);
+                        var stream = await mediaFile.OpenAsync(FileAccessMode.Read);
+                        VidFrame.SetSource(stream, mediaFile.ContentType);
+                        VidFrame.Play();
                     }
                 }
                 else
