@@ -19,24 +19,35 @@
             <StackPanel Orientation="Horizontal">
                 <Canvas Height="480" Width="300" VerticalAlignment="Top">
                     <Rectangle Height="170" Width="300" Fill="#55150255"/>
-                    <TextBlock Text="Sale $" Width="80" Height="40" Foreground="White" FontSize="24" Canvas.Left="10" Canvas.Top="10"/>
-                    <Rectangle Width="140" Height="40" Fill="Gold" Canvas.Left="100" Canvas.Top="10"/>
-                    <TextBlock x:Name="SaleString" Text="00.00" Width="110" Height="40" Foreground="Black" FontSize="36" Canvas.Left="120" Canvas.Top="7" TextAlignment="Right"/>
-                    <TextBlock Text="Gallons" Width="80" Height="40" Foreground="White" FontSize="24" Canvas.Left="10" Canvas.Top="60"/>
-                    <Rectangle Width="140" Height="40" Fill="Gold" Canvas.Left="100" Canvas.Top="60"/>
-                    <TextBlock x:Name="GallonsString" Text="00.000" Width="110" Height="40" Foreground="Black" FontSize="36" Canvas.Left="120" Canvas.Top="57" TextAlignment="Right"/>
-                    <TextBlock Text="Price" Width="40" Height="40" Foreground="White" FontSize="14" Canvas.Left="50" Canvas.Top="120"/>
-                    <Rectangle Width="70" Height="30" Fill="Gold" Canvas.Left="100" Canvas.Top="120"/>
-                    <TextBlock x:Name="PriceString" Text="0.000" Width="60" Height="30" FontSize="22" Canvas.Left="100" Canvas.Top="120" TextAlignment="Right"/>
-                    <TextBlock Text="Per Gallon" Width="40" Height="40" Foreground="White" FontSize="14" Canvas.Left="180" Canvas.Top="115" TextWrapping="WrapWholeWords" />
-                    <Button x:Name="BtnFuelPremium" Content="Premium" Width="90" Height="50" Canvas.Left="0" Canvas.Top="190" Background="#80FF0303" Click="BtnFuelPremium_Click" />
-                    <Button x:Name="BtnFuelRegular" Content="Regular" Width="90" Height="50" Canvas.Left="105" Canvas.Top="190" Background="#80FF0303" Click="BtnFuelRegular_Click" />
-                    <Button x:Name="BtnFuelDiesel" Content="Diesel" Width="90" Height="50" Canvas.Left="210" Canvas.Top="190" Background="#500EFF03" Click="BtnFuelDiesel_Click"  />
-                    <Button Content="R" Width="20" Height="40" Canvas.Left="10" Canvas.Top="440" Background="#800303FF" Click="BtnReset_Click"/>
-                    <Button x:Name="BtnStartStop" Content="Pump Not Ready" Width="200" Height="40" Canvas.Left="80" Canvas.Top="440" Background="#60E49249" Click="BtnStartStop_Click"/>
-                    <ScrollViewer x:Name="ScrollContent" Height="50" Width="300" Canvas.Left="5" Canvas.Top="280" Background="Teal" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FlowDirection="LeftToRight" HorizontalScrollBarVisibility="Hidden">
+                    <TextBlock Text="Sale $" Width="95" Height="43" Foreground="White" FontSize="36" Canvas.Left="10" Canvas.Top="30"/>
+                    <Rectangle Width="180" Height="65" Fill="Gold" Canvas.Left="110" Canvas.Top="25"/>
+                    <TextBlock x:Name="SaleString" Text="00.00" Width="170" Height="70" Foreground="Black" FontSize="60" Canvas.Left="113" Canvas.Top="17" TextAlignment="Right"/>
+                    <TextBlock Text="Gallons" Width="65" Height="30" Foreground="White" FontSize="18" Canvas.Left="45" Canvas.Top="110"/>
+                    <Rectangle Width="100" Height="30" Fill="Gold" Canvas.Left="120" Canvas.Top="110"/>
+                    <TextBlock x:Name="GallonsString" Text="00.000" Width="90" Height="30" Foreground="Black" FontSize="24" Canvas.Left="120" Canvas.Top="108" TextAlignment="Right"/>
+                    <ScrollViewer x:Name="ScrollContent" Height="50" Width="300" Canvas.Left="5" Canvas.Top="190" Background="Teal" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FlowDirection="LeftToRight" HorizontalScrollBarVisibility="Hidden">
                         <TextBlock x:Name="TxtBanner" Text="Initializing..." FontSize="40" />
                     </ScrollViewer>
+                    <Rectangle Height="170" Width="94" Canvas.Left="3" Canvas.Top="260" Fill="Orange"/>
+                    <Rectangle Width="70" Height="30" Fill="Gold" Canvas.Left="15" Canvas.Top="280"/>
+                    <TextBlock x:Name="PremiumPrice" Text="0.000" Width="60" Height="30" FontSize="22" Canvas.Left="20" Canvas.Top="280" TextAlignment="Right"/>
+                    <TextBlock Text="per gallon" Canvas.Left="35" Canvas.Top="310" FontSize="8"/>
+                    <TextBlock Text="Premium" Canvas.Left="15" Canvas.Top="340" FontSize="18"/>
+                    <Button x:Name="BtnFuelPremium" Content="O" Width="60" Height="50" Canvas.Left="20" Canvas.Top="370" Background="#80FF0303" CornerRadius="10" Click="BtnFuelPremium_Click" />
+                    <Rectangle Height="170" Width="94" Canvas.Left="103" Canvas.Top="260" Fill="Orange"/>
+                    <Rectangle Width="70" Height="30" Fill="Gold" Canvas.Left="115" Canvas.Top="280"/>
+                    <TextBlock x:Name="RegularPrice" Text="0.000" Width="60" Height="30" FontSize="22" Canvas.Left="120" Canvas.Top="280" TextAlignment="Right"/>
+                    <TextBlock Text="per gallon" Canvas.Left="135" Canvas.Top="310" FontSize="8"/>
+                    <TextBlock Text="Regular" Canvas.Left="120" Canvas.Top="340" FontSize="18"/>
+                    <Button x:Name="BtnFuelRegular" Content="O" Width="60" Height="50" Canvas.Left="120" Canvas.Top="370" Background="#80FF0303" CornerRadius="10" Click="BtnFuelRegular_Click" />
+                    <Rectangle Height="170" Width="94" Canvas.Left="203" Canvas.Top="260" Fill="Orange"/>
+                    <Rectangle Width="70" Height="30" Fill="Gold" Canvas.Left="215" Canvas.Top="280"/>
+                    <TextBlock x:Name="DieselPrice" Text="0.000" Width="60" Height="30" FontSize="22" Canvas.Left="220" Canvas.Top="280" TextAlignment="Right"/>
+                    <TextBlock Text="per gallon" Canvas.Left="235" Canvas.Top="310" FontSize="8"/>
+                    <TextBlock Text="Diesel" Canvas.Left="225" Canvas.Top="340" FontSize="18"/>
+                    <Button x:Name="BtnFuelDiesel" Content="O" Width="60" Height="50" Canvas.Left="220" Canvas.Top="370" Background="#500EFF03" CornerRadius="10" Click="BtnFuelDiesel_Click"  />
+                    <Button Content="R" Width="20" Height="40" Canvas.Left="10" Canvas.Top="440" Background="#800303FF" CornerRadius="10" Click="BtnReset_Click"/>
+                    <Button x:Name="BtnStartStop" Content="Pump Not Ready" Width="200" Height="40" Canvas.Left="80" Canvas.Top="440" Background="#60E49249" CornerRadius="10" Click="BtnStartStop_Click"/>
                 </Canvas>
                 <MediaElement x:Name="VidFrame" Height="240" Width="320" Margin="10,0,0,0" Stretch="Uniform" AutoPlay="True" IsLooping="True"/>
             </StackPanel>

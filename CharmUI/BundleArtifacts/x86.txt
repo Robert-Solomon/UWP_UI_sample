@@ -1,0 +1,2 @@
+MainPackage=C:\Src\Robert\UWP_UI_sample\CharmUI\bin\x86\Release\CharmUI_1.0.0.0_x86.appx
+SymbolPackage=C:\Src\Robert\UWP_UI_sample\CharmUI\obj\x86\Release\Symbols\CharmUI_1.0.0.0_x86.appxsym

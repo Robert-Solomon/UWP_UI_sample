@@ -33,6 +33,9 @@ namespace CharmUI
         bool MediaEnabled = false;
         double FuelFilled = 0;
         double FuelPrice = 0;
+        readonly double FuelPricePremium = 3.599;
+        readonly double FuelPriceRegular = 3.299;
+        readonly double FuelPriceDiesel = 2.899;
         DispatcherTimer DisplayDriver_Timer1 = new DispatcherTimer();
         double ScrollPos = 0;
         uint PosZeroDelay = 10;
@@ -102,6 +105,10 @@ namespace CharmUI
         public FuelPump()
         {
             this.InitializeComponent();
+
+            PremiumPrice.Text = $"{FuelPricePremium:F3}";
+            RegularPrice.Text = $"{FuelPriceRegular:F3}";
+            DieselPrice.Text = $"{FuelPriceDiesel:F3}";
 
             ResetPump();
             DisplayDriver_Timer1.Interval = new TimeSpan(0, 0, 0, 0, 100);
@@ -344,29 +351,45 @@ namespace CharmUI
             {
                 BtnFuelPremium.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0xff, 0xff, 0x03, 0x03));
                 FuelPrice = 3.599;
+                PremiumPrice.Visibility = Visibility.Visible;
             }
             else
+            {
                 BtnFuelPremium.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x80, 0xff, 0x03, 0x03));
+                PremiumPrice.Visibility = Visibility.Collapsed;
+            }
 
             if (ft == FuelTypes.FuelRegular)
             {
                 BtnFuelRegular.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0xff, 0xff, 0x03, 0x03));
                 FuelPrice = 3.299;
+                RegularPrice.Visibility = Visibility.Visible;
             }
             else
+            {
                 BtnFuelRegular.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x80, 0xff, 0x03, 0x03));
+                RegularPrice.Visibility = Visibility.Collapsed;
+            }
 
             if (ft == FuelTypes.FuelDiesel)
             {
                 BtnFuelDiesel.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0xff, 0x0e, 0xff, 0x03));
                 FuelPrice = 2.899;
+                DieselPrice.Visibility = Visibility.Visible;
             }
             else
+            {
                 BtnFuelDiesel.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x50, 0x0e, 0xff, 0x03));
+                DieselPrice.Visibility = Visibility.Collapsed;
+            }
 
-            PriceString.Text = $"{FuelPrice:F3}";
-
-            if (ft != FuelTypes.FuelNotSelected)
+            if (ft == FuelTypes.FuelNotSelected)
+            {
+                PremiumPrice.Visibility = Visibility.Visible;
+                RegularPrice.Visibility = Visibility.Visible;
+                DieselPrice.Visibility = Visibility.Visible;
+            }
+            else
             {
                 PumpState = PumpStates.StateFuelSelected;
                 TxtBanner.Text = StrStartFueling;
