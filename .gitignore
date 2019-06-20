@@ -3,3 +3,8 @@ CharmUI/bin/*
 CharmUI/.vs/*
 CharmUI/Media/*
 CharmUI/AppPackages/*
+Empty/*
+WebSample/*
+MVC-Sample/.vs/*
+MVC-Sample/bin/*
+MVC-Sample/obj/*
