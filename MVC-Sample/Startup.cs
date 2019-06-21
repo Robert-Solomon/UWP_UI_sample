@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
+using MVC_Sample.Models;
 
 namespace MVC_Sample
 {
@@ -33,6 +35,9 @@ namespace MVC_Sample
 
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+
+            services.AddDbContext<CardioMachineContext>(options =>
+                    options.UseSqlServer(Configuration.GetConnectionString("CardioMachineContext")));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
