@@ -49,7 +49,8 @@
                     <Button Content="R" Width="20" Height="40" Canvas.Left="10" Canvas.Top="440" Background="#800303FF" CornerRadius="10" Click="BtnReset_Click"/>
                     <Button x:Name="BtnStartStop" Content="Pump Not Ready" Width="200" Height="40" Canvas.Left="80" Canvas.Top="440" Background="#60E49249" CornerRadius="10" Click="BtnStartStop_Click"/>
                 </Canvas>
-                <MediaElement x:Name="VidFrame" Height="480" Width="640" Margin="10,0,0,0" Stretch="Uniform" AutoPlay="True" IsLooping="True"/>
+                <Image x:Name="ImageFrame" Height="480" Width="640" Margin="10,0,0,0" Source="Assets/Square44x44Logo.altform-unplated_targetsize-256.png" ImageFailed="ImageFailedEventHandler" ImageOpened="ImageOpenedEventHandler"/>
+                <MediaElement x:Name="VidFrame" Height="400" Width="640" Margin="10,0,0,0" Stretch="Uniform" AutoPlay="True" IsLooping="True"/>
             </StackPanel>
         </StackPanel>
     </Grid>

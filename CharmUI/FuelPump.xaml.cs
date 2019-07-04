@@ -1,25 +1,13 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
-using Windows.Devices.Display.Core;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.Gaming.Input.ForceFeedback;
 using Windows.Storage;
 using Windows.Storage.AccessCache;
-using Windows.Storage.Pickers;
-using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
+using Windows.UI.Xaml.Media.Imaging;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -36,7 +24,8 @@ namespace CharmUI
         readonly double FuelPricePremium = 3.599;
         readonly double FuelPriceRegular = 3.299;
         readonly double FuelPriceDiesel = 2.899;
-        DispatcherTimer DisplayDriver_Timer1 = new DispatcherTimer();
+        DispatcherTimer PumpDisplayTimer = new DispatcherTimer();
+        DispatcherTimer SlideshowTimer = new DispatcherTimer();
         double ScrollPos = 0;
         uint PosZeroDelay = 10;
         enum PumpStates { StateInitial = 0, StateFuelSelected, StatePumpStarted, StatePumpStopped };
@@ -48,12 +37,17 @@ namespace CharmUI
         readonly string StrSelectFuel = "Select Fuel Type";
         readonly string StrPauseStop = "Stop/Pause Pump";
         readonly string StrResumeFueling = "Resume Pump";
-
+        readonly string ImageKeyword = "(IMG)";
+        readonly string SlideShowString = ">>>   SLIDE SHOW   <<<";
+        bool SlidesFound = false;
+        int SlideShowNextIndex = 0;
+        bool SlideShowON = false;
         StorageFolder MediaFolder;
         readonly string MediaIndexFile = "Media.lst";
         readonly string MediaFolderToken = "PickedMediaFolder";
 
-        struct sUri {
+        struct sUri
+        {
             private string display;
             private string file;
             private int width;
@@ -74,8 +68,10 @@ namespace CharmUI
         }
 
         List<sUri> MediaList = new List<sUri>();
+        List<sUri> SlideList = new List<sUri>();
 
-        struct sVid {
+        struct sVid
+        {
             private readonly string display;
             private readonly int col;
             private readonly int row;
@@ -97,9 +93,10 @@ namespace CharmUI
             new sVid ("Native", 0, 0),
             new sVid ("320x200 (CGA)", 320, 200),
             new sVid ("640x480 (VGA)", 640, 480),
+            new sVid ("854x480 (480p)", 854, 480),
             new sVid ("800x600", 800, 600),
-            new sVid ("1280x720 (HD)", 1280, 720),
-            new sVid ("1920x1080 (FHD)", 1920, 1080),
+            new sVid ("1280x720 (HD-720p)", 1280, 720),
+            new sVid ("1920x1080 (FHD-1080p)", 1920, 1080),
         };
 
         public FuelPump()
@@ -111,8 +108,11 @@ namespace CharmUI
             DieselPrice.Text = $"{FuelPriceDiesel:F3}";
 
             ResetPump();
-            DisplayDriver_Timer1.Interval = new TimeSpan(0, 0, 0, 0, 100);
-            DisplayDriver_Timer1.Tick += DisplayDriver_TimerTick;
+            PumpDisplayTimer.Interval = new TimeSpan(0, 0, 0, 0, 100);
+            PumpDisplayTimer.Tick += PumpDisplay_TimerTick;
+
+            SlideshowTimer.Interval = new TimeSpan(0, 0, 0, 0, 5000);
+            SlideshowTimer.Tick += Slideshow_TimerTick;
 
             DisableMediaControls();
         }
@@ -147,10 +147,10 @@ namespace CharmUI
             {
                 vidIxFile = await _mediaFolder.GetFileAsync(MediaIndexFile);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
                 DisableMediaControls();
-                MediaErrorMessage("Error opening " + MediaIndexFile + ex.ToString());
+                MediaErrorMessage("Error opening " + MediaIndexFile + e.ToString());
                 return;
             }
 
@@ -158,6 +158,7 @@ namespace CharmUI
 
             // initialize the media list from file
             MediaList.Clear();
+            SlideList.Clear();
             var lines = await FileIO.ReadLinesAsync(vidIxFile);
             foreach (var line in lines)
             {
@@ -166,12 +167,26 @@ namespace CharmUI
                 int width = Int32.Parse(words[1]);
                 int height = Int32.Parse(words[2]);
                 string file = words[3];
-                MediaList.Add(new sUri(display, width, height, file));
+                if (display.Equals(ImageKeyword))
+                {
+                    SlideList.Add(new sUri("", width, height, file));
+                }
+                else
+                {
+                    MediaList.Add(new sUri(display, width, height, file));
+                }
             }
 
             VidList.Items.Clear();
+            SlidesFound = false;
+            if (SlideList.Count > 0)
+            {
+                VidList.Items.Add(SlideShowString);
+                SlidesFound = true;
+            }
             foreach (var l in MediaList)
                 VidList.Items.Add(l.Display);
+            VidList.SelectedIndex = 0;
 
             VidSize.Items.Clear();
             foreach (var s in VidFrameSize)
@@ -198,7 +213,7 @@ namespace CharmUI
                 {
                     string faToken = ApplicationData.Current.LocalSettings.Values[MediaFolderToken] as string;
 
-                    // get fatoken from params
+                    // get faToken from params
 
                     if (faToken == null)
                     {
@@ -243,7 +258,7 @@ namespace CharmUI
             await InitPageMediaAsync();
         }
 
-        void DisplayDriver_TimerTick(object sender, object /*EventArgs*/ e)
+        void PumpDisplay_TimerTick(object sender, object /*EventArgs*/ e)
         {
             try
             {
@@ -256,13 +271,12 @@ namespace CharmUI
                     GallonsString.Text = $"{FuelFilled:F3}";
                 }
 
-                ScrollContent.ChangeView(ScrollPos,null,null);
+                ScrollContent.ChangeView(ScrollPos, null, null);
                 if (PosZeroDelay > 0)
                 {
                     PosZeroDelay--;
-                    return;
                 }
-                if (ScrollContent.HorizontalOffset < (ScrollPos - 100))
+                else if (ScrollContent.HorizontalOffset < (ScrollPos - 100))
                 {
                     TxtBanner.Text = StrAdBanner;
                     ScrollPos = 0;
@@ -272,6 +286,10 @@ namespace CharmUI
                     ScrollPos += 10;
             }
             catch { }
+        }
+        void Slideshow_TimerTick(object sender, object /*EventArgs*/ e)
+        {
+            ShowNextImage();
         }
 
         private void BtnMainMenu_Click(object sender, RoutedEventArgs e)
@@ -319,7 +337,7 @@ namespace CharmUI
                 case PumpStates.StateFuelSelected:
                     TxtBanner.Text = StrAdBanner;
                     ScrollContent.ChangeView(0, null, null);
-                    DisplayDriver_Timer1.Start();
+                    PumpDisplayTimer.Start();
                     BtnStartStop.Content = StrPauseStop;
 
                     PumpState = PumpStates.StatePumpStarted;
@@ -400,7 +418,7 @@ namespace CharmUI
 
         private void ResetPump()
         {
-            DisplayDriver_Timer1.Stop();
+            PumpDisplayTimer.Stop();
 
             FuelSelection(FuelTypes.FuelNotSelected);
             SaleString.Text = "00.00";
@@ -427,36 +445,97 @@ namespace CharmUI
                     }
                     else
                     {
-                        if (VidSize.SelectedIndex > 0)
+                        if (SlidesFound && VidList.SelectedIndex == 0)
                         {
-                            VidFrame.Height = VidFrameSize[VidSize.SelectedIndex].Row;
-                            VidFrame.Width = VidFrameSize[VidSize.SelectedIndex].Col;
+                            ImageFrame.Visibility = Visibility.Visible;
+                            VidFrame.Visibility = Visibility.Collapsed;
+
+                            // we are starting a slide show
+                            ShowNextImage();
+                            SlideShowON = true;
+                            SlideshowTimer.Start();
                         }
                         else
                         {
-                            VidFrame.Height = MediaList[VidList.SelectedIndex].Height;
-                            VidFrame.Width = MediaList[VidList.SelectedIndex].Width;
+                            ImageFrame.Visibility = Visibility.Collapsed;
+                            VidFrame.Visibility = Visibility.Visible;
+
+                            // we are playing a video
+                            if (VidSize.SelectedIndex > 0)
+                            {
+                                VidFrame.Height = VidFrameSize[VidSize.SelectedIndex].Row;
+                                VidFrame.Width = VidFrameSize[VidSize.SelectedIndex].Col;
+                            }
+                            else
+                            {
+                                VidFrame.Height = MediaList[VidList.SelectedIndex].Height;
+                                VidFrame.Width = MediaList[VidList.SelectedIndex].Width;
+                            }
+
+                            try
+                            {
+                                string fileName = MediaList[VidList.SelectedIndex].File;
+                                StorageFile mediaFile = await MediaFolder.GetFileAsync(fileName);
+                                var stream = await mediaFile.OpenAsync(FileAccessMode.Read);
+                                VidFrame.SetSource(stream, mediaFile.ContentType);
+                                VidFrame.Play();
+                            }
+                            catch (FileNotFoundException)
+                            {
+                                MediaErrorMessage("Media file could not be found");
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                MediaErrorMessage("Access to media file denied");
+                            }
+                            catch (Exception ex)
+                            {
+                                MediaErrorMessage("Unexpected error: " + ex.ToString());
+                            }
                         }
-
-                        var openPicker = new FileOpenPicker();
-                        openPicker.ViewMode = PickerViewMode.Thumbnail;
-                        openPicker.SuggestedStartLocation = PickerLocationId.VideosLibrary;
-                        openPicker.FileTypeFilter.Add("*");
-                        StorageFile mediaFile = await openPicker.PickSingleFileAsync();
-
-
-                        //string fileName = MediaList[VidList.SelectedIndex].File;
-                        //StorageFile mediaFile = await MediaFolder.GetFileAsync(fileName);
-                        var stream = await mediaFile.OpenAsync(FileAccessMode.Read);
-                        VidFrame.SetSource(stream, mediaFile.ContentType);
-                        VidFrame.Play();
                     }
                 }
                 else
                 {
+                    if (SlideShowON)
+                    {
+                        SlideShowON = false;
+                        SlideshowTimer.Stop();
+                    }
                     VidFrame.Stop();
                 }
             }
+        }
+
+        private async void ShowNextImage()
+        {
+            string fileName = SlideList[SlideShowNextIndex].File;
+            if (++SlideShowNextIndex >= SlideList.Count)
+                SlideShowNextIndex = 0;
+
+            StorageFile picFile = await MediaFolder.GetFileAsync(fileName);
+
+            // Open a stream for the selected file.
+            // The 'using' block ensures the stream is disposed
+            // after the image is loaded.
+            using (Windows.Storage.Streams.IRandomAccessStream fileStream =
+                await picFile.OpenAsync(FileAccessMode.Read))
+            {
+                // Set the image source to the selected bitmap.
+                BitmapImage bitmapImage = new BitmapImage();
+
+                bitmapImage.SetSource(fileStream);
+                ImageFrame.Source = bitmapImage;
+            }
+        }
+
+        private void ImageFailedEventHandler(object sender, ExceptionRoutedEventArgs e)
+        {
+            MediaErrorMessage(e.ToString());
+        }
+        private void ImageOpenedEventHandler(object sender, RoutedEventArgs e)
+        {
+            MediaErrorMessage(e.ToString());
         }
     }
 }
